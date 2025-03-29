@@ -34,12 +34,11 @@ type SupportedCanvas = HTMLCanvasElement | OffscreenCanvas;
  * Main WebGL service responsible for coordinating dithering operations
  */
 export class WebGLService {
-	private gl: WebGLRenderingContext | null = null;
+	private gl: WebGL2RenderingContext | WebGLRenderingContext | null = null;
 	private program: WebGLProgram | null = null;
 	private texture: WebGLTexture | null = null;
 	private errorTexture: WebGLTexture | null = null;
 	private paletteTexture: WebGLTexture | null = null;
-	private framebuffer: WebGLFramebuffer | null = null;
 	private canvas: SupportedCanvas | null = null;
 	private lastPaletteOptions = ""; // Used to track palette changes
 	private isOffscreenCanvas = false;
@@ -56,8 +55,12 @@ export class WebGLService {
 			// Get WebGL context with preserved drawing buffer (needed for image downloads)
 			// Note: typecasting is necessary because TypeScript doesn't recognize common methods
 			this.gl =
-				canvas.getContext("webgl2", { preserveDrawingBuffer: true }) ||
-				canvas.getContext("webgl", { preserveDrawingBuffer: true });
+				(canvas.getContext("webgl2", {
+					preserveDrawingBuffer: true,
+				}) as WebGL2RenderingContext) ||
+				(canvas.getContext("webgl", {
+					preserveDrawingBuffer: true,
+				}) as WebGLRenderingContext);
 
 			if (!this.gl) {
 				console.error("WebGL not supported");
@@ -101,9 +104,6 @@ export class WebGLService {
 				"#FFFFFF",
 			]);
 
-			// Create framebuffer for off-screen rendering
-			this.framebuffer = this.gl.createFramebuffer();
-
 			return true;
 		} catch (error) {
 			console.error("Error setting up WebGL:", error);
@@ -116,7 +116,10 @@ export class WebGLService {
 	 * Handles downsampling, texture loading, and different dithering algorithms
 	 * @returns Promise that resolves to success status of the operation
 	 */
-	async ditherImage(image: HTMLImageElement, options: DitherOptions): Promise<boolean> {
+	async ditherImage(
+		image: HTMLImageElement,
+		options: DitherOptions,
+	): Promise<boolean> {
 		if (!this.gl || !this.program || !this.canvas) return false;
 
 		console.log("Processing image with dither type:", options.ditherType);
@@ -127,7 +130,9 @@ export class WebGLService {
 		if (downSamplingFactor > 1) {
 			try {
 				processedImage = await downSampleImage(image, downSamplingFactor);
-				console.log(`Image downsampled by factor: ${downSamplingFactor}, new dimensions: ${processedImage.width}x${processedImage.height}`);
+				console.log(
+					`Image downsampled by factor: ${downSamplingFactor}, new dimensions: ${processedImage.width}x${processedImage.height}`,
+				);
 			} catch (error) {
 				console.error("Error during image downsampling:", error);
 				// Fall back to original image if downsampling fails
@@ -137,8 +142,8 @@ export class WebGLService {
 
 		try {
 			// Use requestAnimationFrame to yield to browser UI thread
-			await new Promise(resolve => requestAnimationFrame(resolve));
-			
+			await new Promise((resolve) => requestAnimationFrame(resolve));
+
 			// Set canvas dimensions to match processed image
 			// Works for both regular and offscreen canvas
 			this.canvas.width = processedImage.width;
@@ -177,7 +182,6 @@ export class WebGLService {
 					? renderFloydSteinberg(
 							this.gl,
 							this.program,
-							// biome-ignore lint/style/noNonNullAssertion: <explanation>
 							this.texture!,
 							this.errorTexture,
 							processedImage.width,
