@@ -212,14 +212,9 @@ export const DitherCanvas = ({
 		>
 			<canvas
 				ref={canvasRef}
-				className="border border-border object-contain"
+				className="object-contain"
 				style={{ maxWidth: "100%", maxHeight: "100%" }}
 			/>
-			{!image && (
-				<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-					Select an image to apply dithering effects
-				</div>
-			)}
 		</div>
 	);
 };

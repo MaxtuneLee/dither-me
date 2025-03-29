@@ -43,20 +43,22 @@ function App() {
 
 	// Handle image selection
 	const handleImageLoaded = (newImage: HTMLImageElement) => {
-		setImage(newImage);
-		setProcessSuccess(false);
-
-		// Set downsampling based on image size
-		if (newImage.width > 2000 || newImage.height > 2000) {
-			setOptions((prev) => ({
-				...prev,
-				downSampling: 2, // Set to 1/2 downsampling for large images
-			}));
-		}
 		setCanvasRenderingTransition(async () => {
 			if (canvasRef.current) {
 				await canvasRef.current.renderFrame(undefined, newImage);
 			}
+			setCanvasRenderingTransition(() => {
+				setImage(newImage);
+				setProcessSuccess(false);
+
+				// Set downsampling based on image size
+				if (newImage.width > 2000 || newImage.height > 2000) {
+					setOptions((prev) => ({
+						...prev,
+						downSampling: 2, // Set to 1/2 downsampling for large images
+					}));
+				}
+			});
 		});
 	};
 
@@ -141,29 +143,26 @@ function App() {
 							<CardTitle>Preview</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="flex-grow">
-								{image ? (
-									<AspectRatio
-										ratio={image ? image.width / image.height : 16 / 9}
-									>
-										{isCanvasPending && (
-											<div className="absolute inset-0 flex flex-col gap-2 items-center justify-center bg-black/20 z-10">
-												<div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-												Rendering
-											</div>
-										)}
-										<DitherCanvas
-											ref={canvasRef}
-											image={image}
-											options={options}
-											onProcessComplete={handleProcessComplete}
-										/>
-									</AspectRatio>
-								) : (
-									<div className="relative aspect-video rounded bg-muted">
-										<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-											Select an image to apply dithering effects
+							<div className="flex-grow relative">
+								<AspectRatio
+									ratio={image ? image.width / image.height : 16 / 9}
+								>
+									{image && isCanvasPending && (
+										<div className="absolute inset-0 flex flex-col gap-2 items-center justify-center bg-white/40 z-10">
+											<div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+											Rendering
 										</div>
+									)}
+									<DitherCanvas
+										ref={canvasRef}
+										image={image}
+										options={options}
+										onProcessComplete={handleProcessComplete}
+									/>
+								</AspectRatio>
+								{!image && (
+									<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+										Select an image to apply dithering effects
 									</div>
 								)}
 							</div>
